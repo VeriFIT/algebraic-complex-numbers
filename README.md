@@ -2,10 +2,11 @@
 A library implementing precise representation of complex numbers in a form of $(4+1)$ tuple.
 A complex number $c$ is represented as $(n_1, n_2, m_1, m_2, k) \in \mathbb{Z}^5$
 where the value of $c$ is given by
-$$c = (\frac{1}{\sqrt{2}})^k n_1 + \sqrt{2} n_2 + m_1 i + m_2 i \sqrt{2}.$$
+
+$$c = (\frac{1}{\sqrt{2}})^k \big(n_1 + \sqrt{2} n_2 + m_1 i + m_2 i \sqrt{2}\big).$$
+
 The library is developed to be used in formal-method tools for quantum computing
 such as simulators and verifiers.
-
 
 ## Building
 Dependencies (for fedora):

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "arith.hpp"
+#include <vector>
 
 using namespace AlgebraicComplexNumbers;
 

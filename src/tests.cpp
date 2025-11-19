@@ -5,12 +5,7 @@
 
 #include <catch2/catch.hpp>
 
-using AlgebraicComplexNumbers::AlgebraicComplexNumber4;
-using AlgebraicComplexNumbers::FixedPrecisionComplexNumber;
-using AlgebraicComplexNumbers::ComplexMatrix;
-
-using AlgebraicComplexNumbers::row_from_ints;
-using AlgebraicComplexNumbers::square_acn_matrix_from_ints;
+using namespace AlgebraicComplexNumbers;
 
 TEST_CASE( "Simple multiplication", "[Algebraic complex numbers]" ) {
     AlgebraicComplexNumber4 acn(0, 1, 0, 0, 0);
@@ -33,6 +28,19 @@ TEST_CASE( "Multiplication comutativity", "[Algebraic complex numbers]" ) {
     auto result = left_imm - right_imm;
 
     REQUIRE(result.is_zero());
+}
+
+TEST_CASE ( "Rescaling with arbitrary width", "[Algebraic complex numbers]" ) {
+    auto num = from_fp_vector({1, 2, 3, 4}, 0);
+
+    mpz_t scale_factor;
+    mpz_init(scale_factor);
+    mpz_set_si(scale_factor, 1);
+    num.rescale(scale_factor);
+
+    // TODO: Add test
+    mpz_clear(scale_factor);
+    
 }
 
 TEST_CASE( "Scaling during addition", "[Algebraic complex numbers]" ) {

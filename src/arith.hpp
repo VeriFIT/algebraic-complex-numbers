@@ -1,10 +1,13 @@
 #pragma once
 
+#include <bit>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <gmp-x86_64.h>
 #include <iostream>
 #include <ostream>
+#include <utility>
 #include <vector>
 
 #include "gmp.h"
@@ -382,6 +385,150 @@ namespace AlgebraicComplexNumbers {
             mpz_sub_ui(this->k, this->k, 2*normalization_2pow);
         }
     };
-
     std::ostream& operator<<(std::ostream& os, const AlgebraicComplexNumber4& number);
+
+    struct DenseNumberStore {
+        s64 width;
+        mpz_t* numbers;
+
+        struct Iterator {
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type   = std::ptrdiff_t;
+            using value_type        = std::pair<s64, mpz_t&>;
+            using pointer           = mpz_t*;
+            using reference         = mpz_t&;
+
+            s64    idx;
+            mpz_t* numbers;
+
+            Iterator(s64 idx, mpz_t* nums) : idx(idx), numbers(nums) {} 
+
+            value_type operator*() const { return std::pair<s64, mpz_t&>(this->idx, numbers[idx]); }
+            pointer   operator->() { return &numbers[idx]; }
+            Iterator& operator++() { idx++; return *this; }  
+            Iterator  operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
+
+            friend bool operator== (const Iterator& a, const Iterator& b) { return a.numbers == b.numbers && a.idx == b.idx; };
+            friend bool operator!= (const Iterator& a, const Iterator& b) { return a.numbers != b.numbers || a.idx != b.idx; }
+        };
+
+        DenseNumberStore(s64 w) : width(w) {
+            this->numbers = new mpz_t[w];
+
+            for (s64 i = 0; i < this->width; i++) {
+                mpz_init(this->numbers[i]);
+            }
+        }
+
+        ~DenseNumberStore() {
+            for (s64 i = 0; i < this->width; i++) {
+                mpz_clear(this->numbers[i]);
+            }
+            
+            delete[] this->numbers;
+            this->numbers = nullptr;
+        }
+
+        mpz_t& at(s64 index) {
+            return this->numbers[index];
+        }
+
+        void set_fp(s64 idx, s64 value) {
+            mpz_set_si(this->numbers[idx], value);
+        }
+
+        Iterator begin() {
+            return Iterator(0, this->numbers);
+        }
+
+        Iterator end() {
+            return Iterator(this->width, this->numbers);
+        }
+    };
+
+    template <typename NumberStorage>
+    struct AlgebraicComplexNumber {
+        s64 n;  // Into how many parts we divide the unit half-circle; needs to be a power of 2
+
+        NumberStorage coefficients;
+        mpz_t scaling_factor;
+
+        AlgebraicComplexNumber(s64 width) : n(width), coefficients(n) {
+            mpz_init(this->scaling_factor);
+        }
+
+        ~AlgebraicComplexNumber() {
+            mpz_clear(this->scaling_factor);
+        }
+
+        std::pair<bool, s64> calc_neighbour(s64 current_idx, s64 offset) {
+            offset = offset % (2*this->n); // Normalize, so we do not spin too much
+
+            bool overflowed = false;
+            s64 neighbour = (current_idx + offset) % (2*this->n);
+
+            if (neighbour >= this->n) {
+                overflowed = true;
+                neighbour = (neighbour % this->n);
+            }
+
+            if (neighbour < 0) {
+                overflowed = true;
+                neighbour += (this->n);
+            }
+
+            return std::make_pair(overflowed, neighbour);
+        }
+        
+        /**
+         * Rescale the complex number so that this->scaling_factor = desired_scaling_factor
+         */
+        AlgebraicComplexNumber rescale(const mpz_t& desired_scaling_factor) {
+            assert(mpz_cmp(desired_scaling_factor, this->scaling_factor) >= 0);
+
+            if (DEBUG) {
+                mpz_t scale_diff;
+                mpz_init(scale_diff);
+                mpz_sub(scale_diff, desired_scaling_factor, scaling_factor);
+                assert(mpz_fits_slong_p(scale_diff));
+            }
+            
+            s64 scale_diff = mpz_get_si(desired_scaling_factor) - mpz_get_si(this->scaling_factor);
+            s64 half_scale_diff = scale_diff / 2;
+
+            AlgebraicComplexNumber rescaled (this->n);
+            for (auto [coef_idx, coef] : this->coefficients) {
+                mpz_mul_2exp(rescaled.coefficients.at(coef_idx), coef, half_scale_diff);
+            }
+
+            if (scale_diff % 2) { // Multiply by sqrt(2) if needed
+                // sqrt(2) = e^(2pi*i/n  * n/4) - e^(2pi*i/n  * 3n/4)
+
+                AlgebraicComplexNumber multiplied_by_sqrt2(this->n);
+
+                auto add_to_friend = [this, &multiplied_by_sqrt2](s64 idx, s64 friend_offset) {
+                    auto [overflowed1, friend1] = this->calc_neighbour(idx, friend_offset);
+                    mpz_t& friend1_val = multiplied_by_sqrt2.coefficients.at(friend1);
+                    if (overflowed1) {
+                        mpz_sub(friend1_val, friend1_val, this->coefficients.at(idx));
+                    } else {
+                        mpz_add(friend1_val, friend1_val, this->coefficients.at(idx));
+                    }
+                };
+
+                for (auto [idx, coef] : this->coefficients) {
+                    add_to_friend(idx,   n/4);
+                    add_to_friend(idx, 3*n/4);
+                }
+
+                return multiplied_by_sqrt2;
+            }
+
+            return rescaled;
+        }
+    };
+
+    AlgebraicComplexNumber<DenseNumberStore> from_fp_vector(std::vector<s64> coefs, s64 scale);
 }
+
+template class AlgebraicComplexNumbers::AlgebraicComplexNumber<AlgebraicComplexNumbers::DenseNumberStore>;

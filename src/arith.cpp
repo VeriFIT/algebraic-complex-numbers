@@ -38,3 +38,14 @@ std::ostream& AlgebraicComplexNumbers::operator<<(std::ostream& os, const FixedP
     return os;
 }
 
+AlgebraicComplexNumber<DenseNumberStore> AlgebraicComplexNumbers::from_fp_vector(std::vector<s64> coefs, s64 scale) {
+    assert (std::popcount(coefs.size()) == 1);
+
+    AlgebraicComplexNumber<DenseNumberStore> num (coefs.size());
+    for (s64 idx = 0; idx < coefs.size(); idx++) {
+        num.coefficients.set_fp(idx, coefs[idx]);
+    }
+
+    return num;
+}
+

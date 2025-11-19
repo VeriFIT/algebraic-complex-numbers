@@ -1,9 +1,15 @@
 # Algebraic Complex Numbers
 A library implementing precise representation of complex numbers in a form of $(4+1)$ tuple.
-A complex number $c$ is represented as $(n_1, n_2, m_1, m_2, k) \in \mathbb{Z}^5$
+A complex number $c$ is represented as $(n_0, n_1, n_2, n_3, k) \in \mathbb{Z}^5$
 where the value of $c$ is given by
 
-$$c = (\frac{1}{\sqrt{2}})^k \big(n_1 + \sqrt{2} n_2 + m_1 i + m_2 i \sqrt{2}\big).$$
+$$c = (\frac{1}{\sqrt{2}})^k \big(n_0 e^{0 \cdot \frac{2 \pi i}{4}} + n_1 e^{1 \cdot \frac{2 \pi i}{4}} + n_2 e^{2 \cdot \frac{2 \pi i}{4}} + n_3 e^{2 \cdot \frac{2 \pi i}{4}} \big).$$
+
+We are currently working on extending the library to support representation with arbitrary division of the unit half-circle, i.e.,
+
+$$c = (\frac{1}{\sqrt{2}})^k \big(n_0 e^{0 \cdot \frac{2 \pi i}{N}} + \cdots + n_{(N-1)} e^{(N-1) \cdot \frac{2 \pi i}{N}} \big)$$
+
+where $N$ is some power of two.
 
 The library is developed to be used in formal-method tools for quantum computing
 such as simulators and verifiers.

@@ -334,6 +334,19 @@ namespace AlgebraicComplexNumbers {
                 mpz_get_si(this->k)
             );
         }
+        /**
+         *  Return current number C = a + b(e^{\pi * i / 4}) + c(e^{2 \pi * i / 4}) + d(e^{3 *\pi * i / 4})
+         *  as (e, f, g, h, k) such that C = e + f*(1/sqrt(2)) + g*i + h*(1/sqrt(2))*i. 
+         */
+        FixedPrecisionComplexNumber into_sqrt2_repr() const {
+            auto fp = this->into_fixed_precision();
+
+            s64 e = fp.a;
+            s64 f = fp.b - fp.d;
+            s64 g = fp.c;
+            s64 h = fp.b + fp.d;
+            return FixedPrecisionComplexNumber(e, f, g, h, fp.k);
+        }
 
         void normalize() {
             if (this->is_zero()) {

@@ -80,27 +80,25 @@ TEST_CASE( "Conversion into direct representation", "[Algebraic complex numbers]
     // Represents: 1 + -2/sqrt(2) + 3i + 6i/sqrt(2)
     {
         AlgebraicComplexNumber4 number (1, 2, 3, 4, 0);
-        FixedPrecisionComplexNumber direct_repr = number.into_fixed_precision();
+        FixedPrecisionComplexNumber direct_repr = number.into_sqrt2_repr();
 
         FixedPrecisionComplexNumber expected_result = {1, -2, 3, 6, 0};
         REQUIRE(expected_result == direct_repr);
     }
 
-    // Represents: -1 + 0 + 2i + 2i/sqrt(2)
     {
         AlgebraicComplexNumber4 number (0, 1, 2, 3, 1);
-        FixedPrecisionComplexNumber direct_repr = number.into_fixed_precision();
+        FixedPrecisionComplexNumber direct_repr = number.into_sqrt2_repr();
 
-        FixedPrecisionComplexNumber expected_result = {-1, 0, 2, 2, 0};
+        FixedPrecisionComplexNumber expected_result = {0, -2, 2, 4, 1};
         REQUIRE(expected_result == direct_repr);
     }
 
-    // Represents: (-1 - 2/sqrt(2) - 4i - 2i/sqrt(2)) * 4
     {
         AlgebraicComplexNumber4 number (-2, -5, 2, -3, -3);
-        FixedPrecisionComplexNumber direct_repr = number.into_fixed_precision();
+        FixedPrecisionComplexNumber direct_repr = number.into_sqrt2_repr();
 
-        FixedPrecisionComplexNumber expected_result = {-1, -2, -4, 2, -2};
+        FixedPrecisionComplexNumber expected_result = {-2, -2, 2, -8, -3};
         REQUIRE(expected_result == direct_repr);
     }
 }

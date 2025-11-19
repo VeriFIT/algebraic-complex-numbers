@@ -16,7 +16,7 @@ project(
     LANGUAGES C CXX
 )
 
-add_library(algebraic_complex_numbers STATIC arith.cpp)
+add_library(algebraic_complex_numbers STATIC arith.cpp matrix.cpp)
 
-add_executable(tests tests.cpp arith.cpp)
+add_executable(tests tests.cpp arith.cpp matrix.cpp)
 target_link_libraries(tests PRIVATE algebraic_complex_numbers gmp)

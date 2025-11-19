@@ -1,6 +1,5 @@
 #include "arith.hpp"
-
-#include <vector>
+#include "matrix.hpp"
 
 #define CATCH_CONFIG_MAIN
 

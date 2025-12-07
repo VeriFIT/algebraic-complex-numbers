@@ -30,18 +30,46 @@ TEST_CASE( "Multiplication comutativity", "[Algebraic complex numbers]" ) {
     REQUIRE(result.is_zero());
 }
 
-TEST_CASE ( "Rescaling with arbitrary width", "[Algebraic complex numbers]" ) {
+TEST_CASE ( "Rescaling with 4", "[Algebraic complex numbers]" ) {
     auto num = from_fp_vector({1, 2, 3, 4}, 0);
+    auto rescaled = num.rescale(1);
+    auto expected_num = from_fp_vector({-6, -2, -2, 4}, 1);
 
-    mpz_t scale_factor;
-    mpz_init(scale_factor);
-    mpz_set_si(scale_factor, 1);
-    num.rescale(scale_factor);
-
-    // TODO: Add test
-    mpz_clear(scale_factor);
-    
+    REQUIRE(rescaled == expected_num);
 }
+
+TEST_CASE ( "Rescaling with width 8", "[Algebraic complex numbers]" ) {
+    auto num = from_fp_vector({1, 2, 3, 4, 1, 2, 3, 4}, 0);
+    auto rescaled = num.rescale(1);
+    auto expected_num = from_fp_vector({-6, -8, 0, 0, 0, 0, 2, 4}, 1);
+
+    REQUIRE(rescaled == expected_num);
+}
+
+TEST_CASE ( "Rescaling with width 8, factor=3", "[Algebraic complex numbers]" ) {
+    auto num = from_fp_vector({1, 2, 3, 4, 1, 2, 3, 4}, 0);
+    auto rescaled = num.rescale(3);
+    auto expected_num = from_fp_vector({-12, -16, 0, 0, 0, 0, 4, 8}, 3);
+
+    REQUIRE(rescaled == expected_num);
+}
+
+TEST_CASE ( "Rescaling with width 4, factor=-3 > -2", "[Algebraic complex numbers]" ) {
+    auto num = from_fp_vector({1, 2, 3, 4}, -3);
+    auto rescaled = num.rescale(-2);
+    auto expected_num = from_fp_vector({-6, -2, -2, 4}, -2);
+
+    REQUIRE(rescaled == expected_num);
+}
+
+TEST_CASE ( "Rescaling with width 8, factor=-3 > -1", "[Algebraic complex numbers]" ) {
+    auto num = from_fp_vector({1, 2, 3, 4, 1, 2, 3, 4}, -3);
+    auto rescaled = num.rescale(-1);
+    auto expected_num = from_fp_vector({2, 4, 6, 8, 2, 4, 6, 8}, -1);
+
+    REQUIRE(rescaled == expected_num);
+}
+
 
 TEST_CASE( "Scaling during addition", "[Algebraic complex numbers]" ) {
     {

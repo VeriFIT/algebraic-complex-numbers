@@ -411,6 +411,27 @@ namespace AlgebraicComplexNumbers {
             friend bool operator!= (const Iterator& a, const Iterator& b) { return a.numbers != b.numbers || a.idx != b.idx; }
         };
 
+        struct ConstIterator {
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type   = std::ptrdiff_t;
+            using value_type        = std::pair<s64, const mpz_t&>;
+            using pointer           = const mpz_t*;
+            using reference         = mpz_t&;
+
+            s64    idx;
+            const mpz_t* numbers;
+
+            ConstIterator(s64 idx, mpz_t* nums) : idx(idx), numbers(nums) {}
+
+            value_type     operator*() const { return std::pair<s64, const mpz_t&>(this->idx, numbers[idx]); }
+            pointer        operator->() { return &numbers[idx]; }
+            ConstIterator& operator++() { idx++; return *this; }
+            ConstIterator  operator++(int) { ConstIterator tmp = *this; ++(*this); return tmp; }
+
+            friend bool operator== (const ConstIterator& a, const ConstIterator& b) { return a.numbers == b.numbers && a.idx == b.idx; };
+            friend bool operator!= (const ConstIterator& a, const ConstIterator& b) { return a.numbers != b.numbers || a.idx != b.idx; }
+        };
+
         DenseNumberStore(s64 w) : width(w) {
             this->numbers = new mpz_t[w];
 
@@ -445,12 +466,20 @@ namespace AlgebraicComplexNumbers {
             mpz_set_si(this->numbers[idx], value);
         }
 
-        Iterator begin() {
+        Iterator begin() const {
             return Iterator(0, this->numbers);
         }
 
-        Iterator end() {
+        ConstIterator cbegin() const {
+            return ConstIterator(0, this->numbers);
+        }
+
+        Iterator end() const {
             return Iterator(this->width, this->numbers);
+        }
+
+        ConstIterator cend() const {
+            return ConstIterator(this->width, this->numbers);
         }
 
         bool operator==(const DenseNumberStore& other) const {
@@ -515,7 +544,7 @@ namespace AlgebraicComplexNumbers {
         /**
          * Rescale the complex number so that this->scaling_factor = desired_scaling_factor
          */
-        AlgebraicComplexNumber rescale(const mpz_t& desired_scaling_factor) {
+        AlgebraicComplexNumber<NumberStorage> rescale(const mpz_t& desired_scaling_factor) const {
             assert(mpz_cmp(desired_scaling_factor, this->scaling_factor) >= 0);
 
             if (DEBUG) {
@@ -530,7 +559,7 @@ namespace AlgebraicComplexNumbers {
             std::cout << mpz_get_si(this->scaling_factor) << " > " << mpz_get_si(desired_scaling_factor) << "\n";
 
             AlgebraicComplexNumber rescaled (this->n, desired_scaling_factor);
-            for (auto [coef_idx, coef] : this->coefficients) {
+            for (const auto& [coef_idx, coef] : this->coefficients) {
                 mpz_mul_2exp(rescaled.coefficients.at(coef_idx), coef, half_scale_diff);
             }
 
@@ -567,6 +596,40 @@ namespace AlgebraicComplexNumbers {
             auto result = this->rescale(desired_scale);
             mpz_clear(desired_scale);
             return result;
+        }
+
+        AlgebraicComplexNumber<NumberStorage> operator+(const AlgebraicComplexNumber<NumberStorage>& other) const {
+            const AlgebraicComplexNumber<NumberStorage>* num_with_larger_scale  = this;
+            const AlgebraicComplexNumber<NumberStorage>* num_with_smaller_scale = &other;
+
+            if (mpz_cmp(num_with_larger_scale->scaling_factor, num_with_smaller_scale->scaling_factor) < 0) { // e.g. (1/sqrt(2))^-4 vs (1/sqrt(2))^-2
+                std::swap(num_with_larger_scale, num_with_smaller_scale);
+            }
+
+            AlgebraicComplexNumber<NumberStorage> smaller_rescaled = num_with_smaller_scale->rescale(num_with_larger_scale->scaling_factor);
+            for (const auto& [idx, val] : num_with_larger_scale->coefficients) {
+                mpz_add(smaller_rescaled.coefficients.at(idx), smaller_rescaled.coefficients.at(idx), val);
+            }
+
+            return smaller_rescaled;
+        }
+
+        AlgebraicComplexNumber<NumberStorage> operator-(const AlgebraicComplexNumber<NumberStorage>& other) const {
+            if (mpz_cmp(this->scaling_factor, other.scaling_factor) < 0) {
+                AlgebraicComplexNumber<NumberStorage> this_rescaled = this->rescale(other.scaling_factor);
+                for (const auto& [idx, val] : other.coefficients) {
+                    mpz_sub(this_rescaled.coefficients.at(idx), this_rescaled.coefficients.at(idx), val);
+                }
+                return this_rescaled;
+            } else {
+                AlgebraicComplexNumber<NumberStorage> other_rescaled = other.rescale(this->scaling_factor);
+                AlgebraicComplexNumber<NumberStorage> result (*this);
+
+                for (const auto& [idx, val] : other_rescaled.coefficients) {
+                    mpz_sub(result.coefficients.at(idx), result.coefficients.at(idx), val);
+                }
+                return result;
+            }
         }
 
         bool operator==(const AlgebraicComplexNumber<NumberStorage>& other) const {

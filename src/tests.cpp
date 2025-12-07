@@ -70,6 +70,50 @@ TEST_CASE ( "Rescaling with width 8, factor=-3 > -1", "[Algebraic complex number
     REQUIRE(rescaled == expected_num);
 }
 
+TEST_CASE (" Addition without rescaling ", "[Algebraic complex numbers]") {
+    auto a = from_fp_vector({1, 2, 3, 4, 1, 2, 3, 4}, -1);
+    auto b = from_fp_vector({1, 2, 3, 4, 1, 2, 3, 4}, -1);
+    auto r = a + b;
+
+    auto expected = from_fp_vector({2, 4, 6, 8, 2, 4, 6, 8}, -1);
+    REQUIRE(expected == r);
+}
+
+TEST_CASE (" Addition with rescaling ", "[Algebraic complex numbers]") {
+    auto a = from_fp_vector({1, 0, 0, 0, 0, 0, 0, 0}, -1);
+    auto b = from_fp_vector({0, 1, 0, 0, 0, 0, 0, 0}, 0);
+    auto r = a + b;
+
+    auto expected = from_fp_vector({0, 1, 1, 0, 0, 0, 1, 0}, 0);
+    REQUIRE(expected == r);
+}
+
+TEST_CASE (" Subtraction without rescaling ", "[Algebraic complex numbers]") {
+    auto a = from_fp_vector({1, 0, 2, 0, 0, 0, 0, 0}, -1);
+    auto b = from_fp_vector({0, 0, 3, 4, 0, 0, 0, 0}, -1);
+    auto r = a - b;
+
+    auto expected = from_fp_vector({1, 0, -1, -4, 0, 0, 0, 0}, -1);
+    REQUIRE(expected == r);
+}
+
+TEST_CASE (" Subtraction with rescaling (left operand has smaller sf)", "[Algebraic complex numbers]") {
+    auto a = from_fp_vector({0, 1, 0, 0, 0, 0, 0, 0}, -2); // After scaling ==> from_fp_vector({0, 0, 0, 1, 0, 0, 0, 1}, -1);
+    auto b = from_fp_vector({0, 0, 3, 4, 0, 0, 0, 0}, -1);
+    auto r = a - b;
+
+    auto expected = from_fp_vector({0, 0, -3, -3, 0, 0, 0, 1}, -1);
+    REQUIRE(expected == r);
+}
+
+TEST_CASE (" Subtraction with rescaling (right operand has smaller sf)", "[Algebraic complex numbers]") {
+    auto a = from_fp_vector({0, 0, 3, 4, 0, 0, 0, 0}, -1);
+    auto b = from_fp_vector({0, 1, 0, 0, 0, 0, 0, 0}, -2); // After scaling ==> from_fp_vector({0, 0, 0, 1, 0, 0, 0, 1}, -1);
+    auto r = a - b;
+
+    auto expected = from_fp_vector({0, 0, 3, 3, 0, 0, 0, -1}, -1);
+    REQUIRE(expected == r);
+}
 
 TEST_CASE( "Scaling during addition", "[Algebraic complex numbers]" ) {
     {

@@ -449,7 +449,14 @@ namespace AlgebraicComplexNumbers {
             }
         }
 
+        DenseNumberStore(DenseNumberStore&& other) : width(other.width) {
+            this->numbers = other.numbers;
+            other.numbers = nullptr;
+        }
+
         ~DenseNumberStore() {
+            if (this->numbers == nullptr) return;
+
             for (s64 i = 0; i < this->width; i++) {
                 mpz_clear(this->numbers[i]);
             }
@@ -490,6 +497,23 @@ namespace AlgebraicComplexNumbers {
             }
             return true;
         }
+
+        DenseNumberStore& operator=(const DenseNumberStore& other) {
+            for (s64 idx = 0; idx < this->width; idx++) {
+                mpz_clear(this->numbers[idx]);
+            }
+            delete[] this->numbers;
+
+            this->width = other.width;
+            this->numbers = new mpz_t[this->width];
+
+            for (s64 idx = 0; idx < this->width; idx++) {
+                mpz_init(this->numbers[idx]);
+                mpz_set(this->numbers[idx], other.numbers[idx]);
+            }
+
+            return *this;
+        }
     };
 
     template <typename NumberStorage>
@@ -514,6 +538,11 @@ namespace AlgebraicComplexNumbers {
         }
 
         AlgebraicComplexNumber(const AlgebraicComplexNumber& other) : n(other.n), coefficients(other.coefficients) {
+            mpz_init(this->scaling_factor);
+            mpz_set(this->scaling_factor, other.scaling_factor);
+        }
+
+        AlgebraicComplexNumber(AlgebraicComplexNumber&& other) : n(other.n), coefficients(other.coefficients) {
             mpz_init(this->scaling_factor);
             mpz_set(this->scaling_factor, other.scaling_factor);
         }
@@ -556,7 +585,6 @@ namespace AlgebraicComplexNumbers {
 
             s64 scale_diff = mpz_get_si(desired_scaling_factor) - mpz_get_si(this->scaling_factor);
             s64 half_scale_diff = scale_diff / 2;
-            std::cout << mpz_get_si(this->scaling_factor) << " > " << mpz_get_si(desired_scaling_factor) << "\n";
 
             AlgebraicComplexNumber rescaled (this->n, desired_scaling_factor);
             for (const auto& [coef_idx, coef] : this->coefficients) {
@@ -630,6 +658,34 @@ namespace AlgebraicComplexNumbers {
                 }
                 return result;
             }
+        }
+
+        AlgebraicComplexNumber<NumberStorage> operator*(const AlgebraicComplexNumber<NumberStorage>& other) const {
+            AlgebraicComplexNumber<NumberStorage> result (this->n);
+
+            mpz_mul(result.scaling_factor, this->scaling_factor, other.scaling_factor);
+
+            mpz_t imm;
+            mpz_init(imm);
+
+            for (const auto& [this_idx, this_val] : this->coefficients) {
+                for (const auto& [other_idx, other_val] : other.coefficients) {
+                    mpz_mul(imm, this_val, other_val);
+
+                    s64 dst_idx = this_idx + other_idx;
+                    if (dst_idx >= this->n) {
+                        mpz_neg(imm, imm);
+                        dst_idx = dst_idx - n;
+                    }
+
+                    mpz_t& target = result.coefficients.at(dst_idx);
+                    mpz_add(target, target, imm);
+                }
+            }
+
+            mpz_clear(imm);
+
+            return result;
         }
 
         bool operator==(const AlgebraicComplexNumber<NumberStorage>& other) const {

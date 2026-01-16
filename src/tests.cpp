@@ -139,10 +139,14 @@ TEST_CASE ("Multiplication 2", "[Algebraic complex numbers]") {
     auto a = from_fp_vector({1, 2, 0, 0, 0, 0, 1, 0}, 2);
     auto b = from_fp_vector({2, 3, 4, 5, 0, 1, 0, 0}, -1);
     auto r = a * b;
-    // {  2,   3, 4, 5}
-    // {-10,   4, 6, 8}
-    // {-12, -15, 6, 9}
     auto expected = from_fp_vector({-2, 2, 10, 12, 10, 1, 4, 3}, -2);
+    REQUIRE(r == expected);
+}
+
+TEST_CASE ("Negation 0", "[Algebraic complex numbers]") {
+    auto a = from_fp_vector({1, 2, 0, 0, 0, 0, 1, 0}, 2);
+    auto r = -a;
+    auto expected = from_fp_vector({-1, -2, 0, 0, 0, 0, -1, 0}, 2);
     REQUIRE(r == expected);
 }
 

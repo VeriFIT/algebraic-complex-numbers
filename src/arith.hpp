@@ -688,15 +688,41 @@ namespace AlgebraicComplexNumbers {
             return result;
         }
 
+        AlgebraicComplexNumber<NumberStorage> operator-() {
+            AlgebraicComplexNumber<NumberStorage> result(*this);
+            for (auto [idx, coef] : result.coefficients) {
+                mpz_neg(coef, coef);
+            }
+            return result;
+        }
+
         bool operator==(const AlgebraicComplexNumber<NumberStorage>& other) const {
             if (this->n != other.n) {
                 return false;
             }
 
             bool scale_eq = (mpz_cmp(this->scaling_factor, other.scaling_factor) == 0);
+            if (!scale_eq) return false;
             bool coefs_eq = (this->coefficients == other.coefficients);
 
-            return scale_eq && coefs_eq;
+            return coefs_eq;
+        }
+
+        bool operator!=(const AlgebraicComplexNumber<NumberStorage>& other) const {
+            return !(*this == other);
+        }
+
+        void operator+=(const AlgebraicComplexNumber<NumberStorage>& other) {
+            // @Optimize: This is a silly implementation (needless memory allocations)
+            auto sum = *this + other;
+            *this = sum;
+        }
+
+        AlgebraicComplexNumber<NumberStorage> operator=(const AlgebraicComplexNumber<NumberStorage>& other) {
+            this->coefficients = other.coefficients;
+            this->n = other.n;
+            mpz_set(this->scaling_factor, other.scaling_factor);
+            return *this;
         }
     };
 

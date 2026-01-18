@@ -71,6 +71,16 @@ namespace AlgebraicComplexNumbers {
             mpz_clears(a, b, c, d, k, 0);
         }
 
+        mpz_t& at(s64 idx) {
+            switch (idx) {
+                case 0: return this->a;
+                case 1: return this->b;
+                case 2: return this->c;
+                case 3: return this->d;
+            }
+            assert(false);
+        }
+
         // Useful constants:
         static AlgebraicComplexNumber4 ONE_OVER_SQRT2() {
             return AlgebraicComplexNumber4(1, 0, 0, 0, 1);
@@ -723,6 +733,10 @@ namespace AlgebraicComplexNumbers {
             this->n = other.n;
             mpz_set(this->scaling_factor, other.scaling_factor);
             return *this;
+        }
+
+        mpz_t& at(s64 idx) {
+            return this->coefficients.at(idx);
         }
     };
 

@@ -9,70 +9,68 @@ namespace AlgebraicComplexNumbers {
     template <typename Number>
     struct ComplexMatrix {
         u64 height, width;
-        Number* data = nullptr;
+        std::vector<Number> data;
 
-        ComplexMatrix(u64 height, u64 width, Number* data_ptr = nullptr) :
-            height(height), width(width), data(data_ptr)
-        {
-            if (this->data == nullptr) {
-                this->data = new Number[this->width*this->height]; // Zero initialized
-            }
-        }
+        Number *zero;
 
-        ComplexMatrix(const ComplexMatrix<Number>& other) {
-            this->width  = other.width;
-            this->height = other.height;
+        ComplexMatrix(u64 height, u64 width, Number *zero_elem) :
+            height(height), width(width), data(height*width, *zero_elem), zero(zero_elem)
+        {}
 
-            this->data   = new Number[this->width*this->height];
-
-            for (u64 idx = 0; idx < other.width*other.height; idx++) {
-                this->data[idx] = other.data[idx];
-            }
+        ComplexMatrix(const ComplexMatrix<Number>& other) : width(other.width), height(other.height), data(other.data) {
         }
 
         ComplexMatrix(ComplexMatrix&& other) {
             this->width  = other.width;
             this->height = other.height;
 
-            this->data = other.data;
-            other.data = nullptr;
+            this->data = std::move(other.data);
         }
 
-        ComplexMatrix operator*(const ComplexMatrix& other) const {
+        Number& getDefaultNumber() {
+            return *this->zero;
+        }
+
+        ComplexMatrix<Number> operator*(ComplexMatrix<Number> &other) {
             assert(this->width == other.height);
 
             u64 result_height = this->height;
             u64 result_width  = other.width;
 
-            Number *result_data = new Number[result_height*result_width];
+            ComplexMatrix<Number> result (result_height, result_width, &this->getDefaultNumber());
             u64 target_cell_idx = 0;
 
             for (u64 row_idx = 0; row_idx < this->height; row_idx++) {
                 for (u64 col_idx = 0; col_idx < other.width; col_idx++) {
 
-                    Number dot_product;
+                    Number dot_product = this->getDefaultNumber();
                     for (u64 elem_idx = 0; elem_idx < this->width; elem_idx++) {
                         Number fragment = this->at(row_idx, elem_idx) * other.at(elem_idx, col_idx);
                         dot_product += fragment;
                     }
 
-                    result_data[target_cell_idx] = dot_product;
+                    result.at_linear(target_cell_idx) = dot_product;
                     target_cell_idx += 1;
                 }
             }
 
-            return ComplexMatrix(result_height, result_width, result_data);
+            return result;
         }
 
-        Number& at(u64 row_idx, u64 col_idx) const {
-            return this->data[row_idx*this->width + col_idx];
+        Number& at(u64 row_idx, u64 col_idx) {
+            u64 elem_idx = row_idx*this->width + col_idx;
+            return this->at_linear(elem_idx);
+        }
+
+        Number& at_linear(u64 elem_idx) {
+            return this->data[elem_idx];
         }
 
         void set(u64 row_idx, u64 col_idx, const Number &value) {
             this->data[row_idx*this->width + col_idx] = value;
         }
 
-        u64 find_nonzero_elem_in_row(u64 row_idx) const {
+        u64 find_nonzero_elem_in_row(u64 row_idx) {
             assert (row_idx < this->height);
 
             for (u64 elem_idx = 0; elem_idx < this->width; elem_idx++) {
@@ -85,8 +83,8 @@ namespace AlgebraicComplexNumbers {
             return this->width;
         }
 
-        ComplexMatrix extract_row(u64 row_idx) const {
-            ComplexMatrix row (1, this->width);
+        ComplexMatrix extract_row(u64 row_idx) {
+            ComplexMatrix row (1, this->width, this->getDefaultNumber());
             for (u64 column_idx = 0; column_idx < this->width; column_idx++) {
                 auto& elem_value = this->at(row_idx, column_idx);
                 row.set(0, column_idx, elem_value);
@@ -94,8 +92,7 @@ namespace AlgebraicComplexNumbers {
             return row;
         }
 
-
-        void insert_row_at(const ComplexMatrix& row, u64 row_idx, bool skip_shifting_subsequent_rows = false) {
+        void insert_row_at(ComplexMatrix& row, u64 row_idx, bool skip_shifting_subsequent_rows = false) {
             assert(row.width == this->width);
 
             if (!skip_shifting_subsequent_rows) {
@@ -115,7 +112,7 @@ namespace AlgebraicComplexNumbers {
          * @Note: We are copying the row_to_subtract_coef in the function invocation, becasue if we were storing just a reference to some external
          * number (e.g. matrix cell) then the subtraction we are doing might in fact modify the coefficient during the subtraction for-loop.
          */
-        void subtract_from_ith_row(u64 row_idx, Number& row_coef, ComplexMatrix& rows_to_subtract, u64 row_to_subtract_idx, Number row_to_subtract_coef) const {
+        void subtract_from_ith_row(u64 row_idx, Number& row_coef, ComplexMatrix& rows_to_subtract, u64 row_to_subtract_idx, Number row_to_subtract_coef) {
             for (u64 elem_idx = 0; elem_idx < this->width; elem_idx++) {
                 auto subtractee_weighted = this->at(row_idx, elem_idx) * row_coef;
                 auto subtractor_weighted = rows_to_subtract.at(row_to_subtract_idx, elem_idx) * row_to_subtract_coef;
@@ -146,13 +143,11 @@ namespace AlgebraicComplexNumbers {
             return true;
         }
 
-        ~ComplexMatrix() {
-            if (this->data != nullptr) delete[] this->data;
-        }
+        ~ComplexMatrix() {}
     };
 
     template <typename T>
-    std::ostream& operator<<(std::ostream& os, const ComplexMatrix<T>& matrix) {
+    std::ostream& operator<<(std::ostream& os, ComplexMatrix<T>& matrix) {
         os << "[";
         if (matrix.height > 1) os << "\n";
         for (u64 row_idx = 0; row_idx < matrix.height; row_idx++) {
@@ -171,8 +166,8 @@ namespace AlgebraicComplexNumbers {
      *  Add a given row into the matrix in row-echelon reduced form.
      */
     template <typename T>
-    s64 add_row_to_row_echelon_matrix(ComplexMatrix<T>& matrix, const ComplexMatrix<T>& row) {
-        ComplexMatrix<T> row_copy (1, row.width); // Make a local copy, since we will be modifying it
+    s64 add_row_to_row_echelon_matrix(ComplexMatrix<T>& matrix, ComplexMatrix<T>& row) {
+        ComplexMatrix<T> row_copy (1, row.width, &matrix.getDefaultNumber()); // Make a local copy, since we will be modifying it
         for (auto row_elem_idx = 0; row_elem_idx < row.width; row_elem_idx++) {
             auto& elem_value = row.at(0, row_elem_idx);
             row_copy.set(0, row_elem_idx, elem_value);

@@ -722,6 +722,19 @@ namespace AlgebraicComplexNumbers {
             return !(*this == other);
         }
 
+        bool is_zero() const {
+            bool result = true;
+
+            for (auto [idx, coef] : this->coefficients) {
+                if (mpz_sgn(coef) != 0) {
+                    result  = false;
+                    break;
+                }
+            }
+
+            return result;
+        }
+
         void operator+=(const AlgebraicComplexNumber<NumberStorage>& other) {
             // @Optimize: This is a silly implementation (needless memory allocations)
             auto sum = *this + other;

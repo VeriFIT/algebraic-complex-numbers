@@ -219,14 +219,18 @@ TEST_CASE( "Conversion into direct representation", "[Algebraic complex numbers]
 }
 
 TEST_CASE( "Add row to a row-echelon-form matrix", "[ACN Matrix]") {
-    using ACN = AlgebraicComplexNumber4;
+    using ACN = AlgebraicComplexNumber<DenseNumberStore>;
+    ACN zero(4);
+
+    MatrixBaker<ACN> baker { &zero };
+
     {
-        ComplexMatrix<ACN> matrix = square_acn_matrix_from_ints<ACN>({
+        ComplexMatrix<ACN> matrix = baker.square_acn_matrix_from_ints({
             0, 0, 0,
             0, 0, 0,
             0, 0, 0,
         });
-        ComplexMatrix<ACN> row = row_from_ints<ACN>({1, 0, 0});
+        ComplexMatrix<ACN> row = baker.row_from_ints({1, 0, 0});
 
         s64 row_slot_idx        = add_row_to_row_echelon_matrix<ACN>(matrix, row);
         s64 subsequent_slot_idx = add_row_to_row_echelon_matrix<ACN>(matrix, row);
@@ -236,12 +240,12 @@ TEST_CASE( "Add row to a row-echelon-form matrix", "[ACN Matrix]") {
     }
 
     {
-        ComplexMatrix<ACN> matrix = square_acn_matrix_from_ints<ACN>({
+        ComplexMatrix<ACN> matrix = baker.square_acn_matrix_from_ints({
             1, 0, 0,
             0, 1, 0,
             0, 0, 1,
         });
-        ComplexMatrix<ACN> row = row_from_ints<ACN>({1, 2, 3});
+        ComplexMatrix<ACN> row = baker.row_from_ints({1, 2, 3});
 
         s64 row_slot_idx = add_row_to_row_echelon_matrix<ACN>(matrix, row);
 
@@ -249,12 +253,12 @@ TEST_CASE( "Add row to a row-echelon-form matrix", "[ACN Matrix]") {
     }
 
     {
-        ComplexMatrix<ACN> matrix = square_acn_matrix_from_ints<ACN>({
+        ComplexMatrix<ACN> matrix = baker.square_acn_matrix_from_ints({
             1, 0, 0,
             0, 3, 0,
             0, 0, 8,
         });
-        ComplexMatrix<ACN> row = row_from_ints<ACN>({1, 2, 0});
+        ComplexMatrix<ACN> row = baker.row_from_ints({1, 2, 0});
 
         s64 row_slot_idx = add_row_to_row_echelon_matrix<ACN>(matrix, row);
 
@@ -262,12 +266,12 @@ TEST_CASE( "Add row to a row-echelon-form matrix", "[ACN Matrix]") {
     }
 
     {
-        ComplexMatrix<ACN> matrix = square_acn_matrix_from_ints<ACN>({
+        ComplexMatrix<ACN> matrix = baker.square_acn_matrix_from_ints({
             1, -1, 0,
             0,  0, 0,
             0,  0, 0,
         });
-        ComplexMatrix<ACN> row = row_from_ints<ACN>({1, -1, 0});
+        ComplexMatrix<ACN> row = baker.row_from_ints({1, -1, 0});
 
         s64 row_slot_idx = add_row_to_row_echelon_matrix<ACN>(matrix, row);
 
@@ -276,8 +280,9 @@ TEST_CASE( "Add row to a row-echelon-form matrix", "[ACN Matrix]") {
 }
 
 TEST_CASE( "MMUL", "[ACN Matrix]") {
-    using ACN = AlgebraicComplexNumber4;
-    MatrixBaker<ACN> baker;
+    using ACN = AlgebraicComplexNumber<DenseNumberStore>;
+    ACN zero (4);
+    MatrixBaker<ACN> baker { &zero };
 
     {
        auto row = baker.row_from_ints({1, -2});
@@ -290,6 +295,7 @@ TEST_CASE( "MMUL", "[ACN Matrix]") {
        auto expected = baker.row_from_ints({-5, -6});
        REQUIRE(result == expected);
     }
+
     {
        auto row = baker.row_from_ints({0, -2, 1, 0});
        auto mat = baker.square_acn_matrix_from_ints({
